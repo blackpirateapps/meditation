@@ -1,0 +1,74 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-release-apk:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate signing secrets
+        env:
+          PAUSE_RELEASE_KEYSTORE_BASE64: ${{ secrets.PAUSE_RELEASE_KEYSTORE_BASE64 }}
+          PAUSE_KEYSTORE_PASSWORD: ${{ secrets.PAUSE_KEYSTORE_PASSWORD }}
+          PAUSE_KEY_ALIAS: ${{ secrets.PAUSE_KEY_ALIAS }}
+          PAUSE_KEY_PASSWORD: ${{ secrets.PAUSE_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in PAUSE_RELEASE_KEYSTORE_BASE64 PAUSE_KEYSTORE_PASSWORD PAUSE_KEY_ALIAS PAUSE_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name secret is required for a signed release APK."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Decode and check release keystore
+        env:
+          PAUSE_RELEASE_KEYSTORE_BASE64: ${{ secrets.PAUSE_RELEASE_KEYSTORE_BASE64 }}
+          PAUSE_KEYSTORE_PASSWORD: ${{ secrets.PAUSE_KEYSTORE_PASSWORD }}
+          PAUSE_KEY_ALIAS: ${{ secrets.PAUSE_KEY_ALIAS }}
+        run: |
+          mkdir -p app/keystore
+          printf '%s' "$PAUSE_RELEASE_KEYSTORE_BASE64" | base64 --decode > app/keystore/release.jks
+          test -s app/keystore/release.jks
+          keytool -list \
+            -keystore app/keystore/release.jks \
+            -storepass "$PAUSE_KEYSTORE_PASSWORD" \
+            -alias "$PAUSE_KEY_ALIAS" \
+            >/dev/null
+
+      - name: Build release APK
+        env:
+          PAUSE_KEYSTORE_FILE: ${{ github.workspace }}/app/keystore/release.jks
+          PAUSE_KEYSTORE_PASSWORD: ${{ secrets.PAUSE_KEYSTORE_PASSWORD }}
+          PAUSE_KEY_ALIAS: ${{ secrets.PAUSE_KEY_ALIAS }}
+          PAUSE_KEY_PASSWORD: ${{ secrets.PAUSE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pause-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
