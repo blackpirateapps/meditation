@@ -35,6 +35,7 @@ Build files:
 - `settings.gradle.kts`
 - `build.gradle.kts`
 - `gradle/libs.versions.toml`
+- `gradle.properties`
 - `app/build.gradle.kts`
 
 Key choices:
@@ -47,6 +48,12 @@ Key choices:
 - compileSdk/targetSdk `36`
 - Room `2.8.4` with KSP
 - Core library desugaring is enabled because domain code uses `java.time` on minSdk 23.
+- `gradle.properties` enables `android.useAndroidX=true`; this is required for release builds because the app depends on AndroidX/Compose artifacts.
+- `android.nonTransitiveRClass=true` is enabled to keep generated resources scoped to the app module.
+
+Recent build fix:
+
+- 2026-05-14: Added root `gradle.properties` after `:app:mergeReleaseNativeLibs` failed with AndroidX dependencies detected while `android.useAndroidX` was not enabled.
 
 Gradle wrapper:
 
