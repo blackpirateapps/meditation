@@ -43,7 +43,7 @@ Key choices:
 - AGP `8.13.2`
 - Kotlin `2.2.20`
 - Compose BOM `2025.12.01`
-- Material 3 `1.5.0-alpha19` explicitly, so `MotionScheme.expressive()` and Material 3 Expressive APIs are available.
+- Material 3 `1.5.0-alpha15` explicitly, so `MotionScheme.expressive()` and Material 3 Expressive APIs are available while staying compatible with AGP `8.13.2` and compile SDK `36`.
 - minSdk `23`, required by recent Material 3 Expressive artifacts.
 - compileSdk/targetSdk `36`
 - Room `2.8.4` with KSP
@@ -54,6 +54,7 @@ Key choices:
 Recent build fix:
 
 - 2026-05-14: Added root `gradle.properties` after `:app:mergeReleaseNativeLibs` failed with AndroidX dependencies detected while `android.useAndroidX` was not enabled.
+- 2026-05-14: Downgraded Material 3 from `1.5.0-alpha19` to `1.5.0-alpha15` after `:app:checkReleaseAarMetadata` reported that `alpha19` requires compile SDK `37` and Android Gradle Plugin `9.1.0`. The `alpha15` AAR metadata still requires only min compile SDK `35` and AGP `8.6.0`, which fits this project.
 
 Gradle wrapper:
 
